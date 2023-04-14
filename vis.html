@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>DHGraff Vis</title>
+    <!-- Load Leaflet from CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+     integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+     crossorigin=""/>
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+    integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+    crossorigin=""></script>
+</head>
+<!-- Add a div element at the top of the body where the filter options will be placed -->
+<div id="filter-options" style="text-align: center; margin-top: 20px;">
+  <button onclick="deleteAllMarkers()">Alle Markierungen löschen</button>
+  <button onclick="showAllMarkers()">Alle Markierungen anzeigen</button>
+<br>
+<b>Fußball</b>
+  <label><input type="checkbox" onchange="filterMarkersByCategory('Fussball', this)">Fussball</label>
+  <label><input type="checkbox" onchange="filterMarkersByCategoryVerein('BSG', this, 'green')" style="margin-left: 10px; ">BSG</label>
+  <label><input type="checkbox" onchange="filterMarkersByCategoryVerein('LOK', this, 'blue')" style="margin-left: 10px;">LOK</label>
+<br>
+<b>Kategorien</b>
+  <label><input type="checkbox" onchange="filterMarkersByCategory('Graffitis/Taggs', this)">Graffitis/Taggs</label>
+<br>
+<b>Besondere Typen</b>
+<label><input type="checkbox" onchange="filterMarkersByCategory('Leer', this, 'grey')">Leere Kästen</label>
+<label><input type="checkbox" onchange="filterMarkersByCategory('Plakate', this)">Plakate</label>
+<label><input type="checkbox" onchange="filterMarkersByCategory('Voll bemalt', this)">Voll bemalt</label>
+<br>
+<b>Farben (großflächig bemalt)</b>
+<label><input type="checkbox" onchange="filterMarkersByCategoryFarbe('Gruen', this, 'green')">Grün</label>
+<label><input type="checkbox" onchange="filterMarkersByCategoryFarbe('Schwarz', this, 'black')">Schwarz</label>
+<label><input type="checkbox" onchange="filterMarkersByCategoryFarbe('Lila', this, 'violet')"> Lila</label>
+<label><input type="checkbox" onchange="filterMarkersByCategoryFarbe('Gelb', this, 'yellow')"> Gelb</label>
+<label><input type="checkbox" onchange="filterMarkersByCategoryFarbe('Blau', this, 'blue')"> Blau</label>
+<label><input type="checkbox" onchange="filterMarkersByCategoryFarbe('Rot', this, 'red')"> Rot</label>
+<br>
+<b>Suche</b> <input type="text" id="search-bar" onkeyup="searchMarkers()" placeholder="Suche...">
+
+
+</div>
+
+
+</div>
+
+<!-- Add a global variable to store all markers -->
+<script>
+  var markers = [];
+  var checkboxStatus = {
+    "Fussball": false,
+    "Graffitis/Taggs": false,
+    "Politische Inhalte": false,
+    "Art": false,
+    "Farbe": false,
+    "Verein": false
+  };
+
+ 
+
+
+
+
+  // Modify the fetch function to store each marker in the global variable
+  fetch('lat_long_data.json')
+    .then(response => response.json())
+    .then(data => {
+      data.forEach(obj => {
+var marker = L.marker([obj.lat, obj.lng]).bindPopup(`Kategorie: ${obj.kategorie}<br>Art: ${obj.art}<br>Verein: ${obj.verein}<br>Name(n): ${obj.graffName}<br>Politische Aussage(n): ${obj.polAussage}<br>Farben(großflächig): ${obj.farbe}<br><img src="https://dhgraff-leipzig.ibrave.host/uploader/uploads/${obj.filename}" alt="Graffiti image" width="200" height="300">`);
+
+
+        markers.push(marker);
+        marker.addTo(mymap);
+        updateCounter();
+      });
+    })
+    .catch(error => console.error(error));
+
+  // Add two functions to handle the filter options
+  function deleteAllMarkers() {
+    markers.forEach(marker => marker.remove());
+    updateCounter();
+  }
+
+  function showAllMarkers() {
+    markers.forEach(marker => marker.addTo(mymap));
+    updateCounter();
+  }
+
+ 
+  function filterMarkersByCategory(category, checkbox, color) {
+    checkboxStatus[category] = checkbox.checked;
+    markers.forEach(marker => {
+        const popupContent = marker._popup._content.split(',');
+        const categoryMatch = popupContent.some(str => str.trim() ===  category);
+    
+      if (marker._popup._content.includes(`Kategorie: ${category}`)) {
+        if (checkboxStatus[category]) {
+          marker.addTo(mymap);
+          updateCounter();
+          if (color) {
+            marker.setIcon(new L.Icon({
+              iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-' + color + '.png',
+              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41]
+            }));
+          }
+        } else {
+          marker.remove();
+          updateCounter();
+        }
+      }
+      if (marker._popup._content.replace(/,/g, '').includes(`Verein: ${category}`)) {
+        if (checkboxStatus[category]) {
+          marker.addTo(mymap);
+          updateCounter();
+          if (color) {
+            marker.setIcon(new L.Icon({
+              iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-' + color + '.png',
+              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41]
+            }));
+          }
+        } else {
+          marker.remove();
+          updateCounter();
+        }
+      }
+      if (marker._popup._content.replace(/,/g, '').includes(`Art: ${category}`)) {
+        if (checkboxStatus[category]) {
+          marker.addTo(mymap);
+          updateCounter();
+          if (color) {
+            marker.setIcon(new L.Icon({
+              iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-' + color + '.png',
+              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41]
+            }));
+          }
+        } else {
+          marker.remove();
+          updateCounter();
+        }
+      }
+    });
+  };
+
+  function filterMarkersByCategoryFarbe(category, checkbox, color, marker) {
+    checkboxStatus[category] = checkbox.checked;
+    markers.forEach(marker => {
+        const popupContent = marker._popup._content.split(',');
+        const categoryMatch = popupContent.some(str => str.trim() ===  category);
+    
+      if (categoryMatch || marker._popup._content.replace(/,/g, '').includes(`Farben(großflächig): ${category}`) ) {
+        if (checkboxStatus[category]) {
+          marker.addTo(mymap);
+          updateCounter();
+          if (color) {
+            marker.setIcon(new L.Icon({
+              iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-' + color + '.png',
+              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41]
+            }));
+          }
+        } else {
+          marker.remove();
+          updateCounter();
+        }
+      }
+    });
+  };
+
+
+  function filterMarkersByCategoryVerein(category, checkbox, color, marker) {
+    checkboxStatus[category] = checkbox.checked;
+    markers.forEach(marker => {
+        const popupContent = marker._popup._content.split(',');
+        const categoryMatch = popupContent.some(str => str.trim() ===  category);
+    
+      if (categoryMatch || marker._popup._content.replace(/,/g, '').includes(`Verein: ${category}`)) {
+        if (checkboxStatus[category]) {
+          marker.addTo(mymap);
+          updateCounter();
+          if (color) {
+            marker.setIcon(new L.Icon({
+              iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-' + color + '.png',
+              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41]
+            }));
+          }
+        } else {
+          marker.remove();
+          updateCounter();
+        }
+      }
+    });
+  };
+
+  function filterMarkersByCategoryArt(category, checkbox, color, marker) {
+    checkboxStatus[category] = checkbox.checked;
+    markers.forEach(marker => {
+        const popupContent = marker._popup._content.split(',');
+        const categoryMatch = popupContent.some(str => str.trim() ===  category);
+    
+      if (marker._popup._content.replace(/,/g, '').includes(`Art: ${category}`)) {
+        if (checkboxStatus[category]) {
+          marker.addTo(mymap);
+          updateCounter();
+          if (color) {
+            marker.setIcon(new L.Icon({
+              iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-' + color + '.png',
+              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41]
+            }));
+          }
+        } else {
+          marker.remove();
+          updateCounter();
+        }
+      }
+    });
+  };
+
+
+  var counter = document.createElement('p');
+counter.innerHTML = `Anzahl aktueller Markierungen: ${markers.length}`;
+document.getElementById('filter-options').appendChild(counter);
+
+
+  // Add event listeners to checkboxes
+  document.querySelectorAll('#filter-options input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      filterMarkersByCategory(checkbox.value, checkbox);
+    });
+  });
+  // Function that checks if a string is present in another string and returns a boolean
+function checkStringPresence(string1, string2) {
+  // Ignore commas
+  string2 = string2.replace(/,/g, '');
+  return string2.includes(string1);
+}
+
+// Update the counter every time a marker is added or removed from the map
+function updateCounter() {
+  counter.innerHTML = `Anzahl aktueller Markierungen: ${markers.filter(marker => mymap.hasLayer(marker)).length}`;
+}
+function searchMarkers() {
+  const input = document.getElementById("search-bar").value.toLowerCase();
+  markers.forEach(marker => {
+    const popupContent = marker._popup._content.toLowerCase();
+    if (popupContent.includes(input)) {
+      marker.addTo(mymap);
+      updateCounter();
+    } else {
+      marker.remove();
+    }
+  });
+}
+
+
+
+
+
+
+</script><body style="margin: 0;">
+    <div id="mapid" style="height: 100vh;"></div>
+    <script>
+        // Initialize the map
+        var mymap = L.map('mapid').setView([51.3396955, 12.3730747], 13);
+
+        // Add the tile layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+                '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+                'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+            maxZoom: 18,
+        }).addTo(mymap);
+
+
+
+
+
+        // Add navigation bar
+        L.control.navbar().addTo(mymap);
+    </script>
+    <script src="venobox/dist/venobox.min.js">
+      new VenoBox({
+  selector: '.venobox'
+});
+    </script>
+</body>
+</html>
+
+
+
